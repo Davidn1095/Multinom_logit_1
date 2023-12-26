@@ -1,0 +1,47 @@
+# Read data from 'Chapman_Cuali.csv' into 'Chapman.Cuali' DataFrame with strings converted to factors
+Chapman.Cuali <- read.csv("Chapman_Cuali.csv", header = T, sep = ",", stringsAsFactors = T)
+
+# Convert 'Presion' column to a factor with specific order of levels
+Chapman.Cuali$Presion <- factor(Chapman.Cuali$Presion, levels = c("Optima", "Normal", "Alta", "Descompensada"))
+
+# Convert 'IMC' column to a factor with specific levels
+Chapman.Cuali$IMC <- factor(Chapman.Cuali$IMC, levels = c("Normal", "Sobrepeso", "Obesidad"))
+
+# Load the 'nnet' package for multinomial logistic regression
+library(nnet)
+
+# Fit a multinomial logistic regression model with 'Presion' as the response variable
+Ajuste.Multinom.Cuanti <- multinom(Presion ~ Edad + Colesterol, data = Chapman.Cuali)
+
+# Display a summary of the fitted multinomial logistic regression model
+summary(Ajuste.Multinom.Cuanti)
+
+# Exponentiate the model's coefficients to interpret them as odds ratios
+exp(summary(Ajuste.Multinom.Cuanti)$coefficients)
+
+# Calculate z-scores for each model coefficient (coefficients divided by their standard errors)
+summary(Ajuste.Multinom.Cuanti)$coefficients / summary(Ajuste.Multinom.Cuanti)$standard.errors
+
+# Compute two-tailed p-values for the z-scores
+2 * pnorm(abs(summary(Ajuste.Multinom.Cuanti)$coefficients / summary(Ajuste.Multinom.Cuanti)$standard.errors), lower.tail = F)
+
+# Calculate confidence intervals for the model parameters
+confint(Ajuste.Multinom.Cuanti)
+
+# Exponentiate the confidence intervals for interpretation as odds ratios
+exp(confint(Ajuste.Multinom.Cuanti))
+
+# Predict probabilities for the first 10 observations in the dataset
+predict(Ajuste.Multinom.Cuanti, type = "probs")[1:10,]
+
+# Predict the class for the first 10 observations
+predict(Ajuste.Multinom.Cuanti, type = "class")[1:10]
+
+# Create a contingency table to compare the actual 'Presion' levels with those predicted by the model
+table(Chapman.Cuali$Presion, predict(Ajuste.Multinom.Cuanti, type = "class"))
+
+# Retrieve the deviance of the fitted model
+Ajuste.Multinom.Cuanti$deviance
+
+# Calculate the p-value for the deviance statistic to test the overall significance of the model
+pchisq(Ajuste.Multinom.Cuanti$deviance, 591, lower.tail = F)
